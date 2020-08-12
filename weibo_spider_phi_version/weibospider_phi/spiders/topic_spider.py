@@ -1,0 +1,169 @@
+# encoding : UTF-8
+
+from lxml import etree
+import time
+import json, re, logging
+from scrapy.selector import Selector
+from scrapy.http import Request
+from weibospider_phi.items import TopicTweetItem, TopicCommentItem
+from scrapy_redis.spiders import RedisSpider
+
+logger = logging.getLogger("TopicTweetSpider")
+# redis传输url
+# lpush topics:start_urls 'https://s.weibo.com/realtime?q=%23北京疫情%23&rd=realtime&tw=realtime&Refer=weibo_realtime&page=1'
+
+# lpush topics:start_urls 'https://s.weibo.com/realtime?q=%23%E5%8C%97%E4%BA%AC%E7%96%AB%E6%83%85%23&rd=realtime&tw=realtime&Refer=weibo_realtime'
+# lpush topics:start_urls 'https://s.weibo.com/hot?q=%23%E5%8C%97%E4%BA%AC%E7%96%AB%E6%83%85%23&xsort=hot&suball=1&tw=hotweibo&Refer=hot_hot'
+class TopicSpider(RedisSpider):
+    name = 'topics'
+    allow_domains = 'weibo.com'
+
+
+
+    topic_realtime_url = 'https://s.weibo.com/realtime?q=%23{}%23&rd=realtime&tw=realtime&Refer=weibo_realtime&page={}'
+    topic_hot_url = 'https://s.weibo.com/hot?q=%23{}%23&xsort=hot&suball=1&tw=hotweibo&Refer=realtime_hot&page={}'
+    comment_base_url = "https://weibo.com/aj/v6/comment/big?ajwvr=6&id={}&page={}&from=singleWeiBo"
+    search_list = ['北京疫情']
+    redis_key = 'topics:start_urls'
+
+    custom_settings = {
+        # 指定 redis链接密码，和使用哪一个数据库
+        'REDIS_HOST': '127.0.0.1',
+        'REDIS_PORT': 6789,
+
+        'REDIS_PARAMS': {
+            'db': 1
+        },
+    }
+
+    def parse(self, response):
+        '''
+        爬取一个话题下的实时消息
+        '''
+        selector = Selector(response)
+        card_node = selector.xpath('//div[@class="card"]')
+        # for i in range(2,50):
+        #     next_url = self.topic_realtime_url.format('北京疫情',str(i))
+        #     yield Request(next_url, callback=self.parse, dont_filter=True)
+        for tweet_block in card_node:
+            tweet_item = TopicTweetItem()
+            tweet_item['user_name'] = tweet_block.xpath('.//div[@class="content"]/div/div[2]/a/@nick-name')[0].extract()
+            # tweet_item['url'] = tweet_block.xpath('.//div[@class="content"]/div/div[2]/a/@href')[0].extract()
+            tweet_item['url'] = tweet_block.xpath('.//p[@class="from"]/a/@href')[0].extract().replace('//', '').split('?')[0]
+            # --------------------------content--------------------------
+            if tweet_block.xpath('./div/div/p[@node-type="feed_list_content_full"]/text()') == []:
+                content_temp_list = tweet_block.xpath('.//p[@node-type="feed_list_content"]/text()').extract()
+                tweet_item['content'] = ''.join(content_temp_list).replace(' ', '').replace('\n', '')
+            else:
+                content_temp_list = tweet_block.xpath('.//p[@node-type="feed_list_content_full"]/text()').extract()
+                tweet_item['content'] = ''.join(content_temp_list).replace(' ', '').replace('\n', '')
+
+            tweet_item['send_time'] = tweet_block.xpath('//p[@class="from"]/a[1]/text()')[0].extract().replace(' ', '').replace('\n', '')
+            tweet_item['crawl_time'] = time.localtime(time.time())
+            # --------------------------from-------------------------------
+            if tweet_block.xpath('.//a[@rel="nofollow"]/text()').extract() != []:
+                tweet_item['send_device'] = tweet_block.xpath('.//a[@rel="nofollow"]/text()')[0].extract()
+            else:
+                tweet_item['send_device'] = ""
+            # -----------------status---------------------
+            temp_repost = tweet_block.xpath('.//div[@class="card-act"]/ul/li/a/text()')[1].extract().split(' ')[2]
+            if temp_repost == '':
+                tweet_item['repost_count'] = '0'
+            else:
+                tweet_item['repost_count'] = temp_repost
+
+            temp_comment = tweet_block.xpath('.//div[@class="card-act"]/ul/li/a/text()')[2].extract().split(' ')[1]
+            if temp_comment == '':
+                tweet_item['comment_count'] = 0
+            else:
+                tweet_item['comment_count'] = temp_comment
+            temp_thumbup = tweet_block.xpath('.//div[@class="card-act"]/ul/li/a/em/text()').extract()
+            if temp_thumbup == []:
+                tweet_item['thumb_up_count'] = '0'
+            else:
+                tweet_item['thumb_up_count'] = temp_thumbup[0]
+            tweet_item['_id'] = tweet_item['url'].split('/')[-1] # tweet_id
+            try:
+                tweet_item['user_id'] = tweet_item['url'].split('/')[1]
+            except Exception as e:
+                print(tweet_item['url'],e)
+            # ----------判断是否有评论----------------
+            logger.info(tweet_item)
+            if tweet_item['comment_count'] != '0':
+                tweet_mid = tweet_block.xpath('../@mid').extract()[0]  #评论连接需要用的mid
+                common_url = self.comment_base_url.format(tweet_mid, '1')
+                yield Request(common_url, callback=self.parse_comments, meta={'tweet_id': tweet_item['_id']})
+            yield tweet_item
+
+
+
+
+
+
+    def parse_comments(self, response):
+        '''
+        单个微博的评论信息
+        '''
+        # 先判断评论多少，多的话需要翻几页
+        print(response.url)
+        if re.findall('&page=1&', response.url):
+            comm_count = json.loads(response.body)['data']['count']
+            if int(comm_count) > 15:
+                page_num = int(int(comm_count)/20)
+                print(page_num)
+                for i in range(2,page_num+1):
+                    print(type(i),i)
+                    next_page_num = '&page={}&'.format(str(i))
+                    next_url = response.url.replace('&page=1&', next_page_num)
+                    print(next_url)
+                    yield Request(next_url, callback=self.parse_comments, meta={'tweet_id': response.meta['tweet_id']})
+        # 开始实际爬取评论信息
+        comm_html = json.loads(response.body)['data']['html']
+        comm_tree = etree.HTML(comm_html)
+        content_node = comm_tree.xpath('//div[@comment_id]')
+        for user_info_node in content_node:
+
+            comment_data = {}
+            comment_item = TopicCommentItem()
+            # print(response.meta)
+            comment_item['tweet_id'] = response.meta['tweet_id']
+            temp_userid = user_info_node.xpath('.//a[@usercard]/@usercard')[0]
+            comment_item['user_id'] = re.findall('[0-9]\d+', temp_userid)[0]
+            comment_item['_id'] = user_info_node.xpath('./@comment_id')[0]
+            comment_item['user_name'] = user_info_node.xpath('.//a[@usercard]/text()')[0]
+            # comment_data['home_page'] = user_info_node.xpath('.//a[@usercard]/@href')[0].replace('//', '')
+            # coentent
+            content_emojo = ''.join(user_info_node.xpath('.//div[@class="WB_text"]/img/@alt'))
+            content_words = ''.join(user_info_node.xpath('.//div[@class="WB_text"]/text()')[1:]).replace('：',
+                                                                                                         '').replace(
+                " ", "")
+            comment_item['content'] = content_emojo + content_words
+            comment_item['send_time'] = user_info_node.xpath('.//div[@class="WB_from S_txt2"]/text()')[0]  # 需要优化时间格式
+            # comment_data['crawl_time'] = time.strftime(time.localtime(time.time()),)
+
+            # status
+            temp_like = user_info_node.xpath('.//span[@node-type="like_status"]/em[last()]/text()')[0]
+            if temp_like == "赞":
+                comment_item['thumb_up'] = '0'
+            else:
+                comment_item['thumb_up'] = temp_like
+            # second_lvl_comments
+            # print(response.meta.keys())
+            if 'origin_comment' in response.meta.keys():
+                comment_item['origin_comment_id'] = response.meta['origin_comment']
+            else:
+                comment_item['origin_comment_id'] = None
+            if user_info_node.xpath('.//div[@class="list_li_v2"]/text()'):
+                more_comments_url = 'https://weibo.com/aj/v6/comment/big?ajwvr=6' + '&page=1&' + \
+                                    user_info_node.xpath('.//div[@class="list_li_v2"]//a[@action-data]/@action-data')[0]
+                print(more_comments_url)
+                yield Request(more_comments_url, callback=self.parse_comments, meta={'origin_comment': comment_item['_id'],'tweet_id':comment_item['tweet_id']})
+            yield comment_item
+
+
+
+
+    # def parse_second_level_comments(self, response):
+        '''
+        评论中的二级评论
+        '''
