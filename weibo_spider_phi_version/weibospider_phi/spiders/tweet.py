@@ -86,7 +86,7 @@ class TweetCommentSpider(RedisSpider):
         request_meta['item'] = user_item
         yield Request(self.base_url + '/u/{}'.format(user_item['_id']),
                       callback=self.parse_user_info_detail,
-                      meta=request_meta, dont_filter=True, priority=10)
+                      meta=request_meta, dont_filter=True, priority=7)
 
     def parse_user_info_detail(self, response):
         text = response.text
@@ -127,7 +127,7 @@ class TweetCommentSpider(RedisSpider):
                 all_page = int(all_page)
                 for page_num in range(2, all_page + 1):
                     page_url = response.url.replace('page=1', 'page={}'.format(page_num))
-                    yield Request(page_url, self.parse_tweet, dont_filter=False, meta=response.meta, priority=7)
+                    yield Request(page_url, self.parse_tweet, dont_filter=False, meta=response.meta, priority=10)
             ##————————————————————————————————————————————————————————————————————————————————————
 
 

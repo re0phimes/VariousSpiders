@@ -9,10 +9,13 @@ from weibospider_phi.items import TopicTweetItem, TopicCommentItem
 from scrapy_redis.spiders import RedisSpider
 
 logger = logging.getLogger("TopicTweetSpider")
+
+spider_topics = ['北京疫情','The Clean Network']
+
 # redis传输url
 # lpush topics:start_urls 'https://s.weibo.com/realtime?q=%23北京疫情%23&rd=realtime&tw=realtime&Refer=weibo_realtime&page=1'
 
-# lpush topics:start_urls 'https://s.weibo.com/realtime?q=%23%E5%8C%97%E4%BA%AC%E7%96%AB%E6%83%85%23&rd=realtime&tw=realtime&Refer=weibo_realtime'
+# lpush topics:start_urls 'https://s.weibo.com/realtime?q=%23%E5%8C%97%E4%BA%AC%E7%96%AB%E6%83%85%23&rd=realtime&tw=realtime&Refer=weibo_realtime&page=1'
 # lpush topics:start_urls 'https://s.weibo.com/hot?q=%23%E5%8C%97%E4%BA%AC%E7%96%AB%E6%83%85%23&xsort=hot&suball=1&tw=hotweibo&Refer=hot_hot'
 class TopicSpider(RedisSpider):
     name = 'topics'
@@ -22,7 +25,7 @@ class TopicSpider(RedisSpider):
 
     topic_realtime_url = 'https://s.weibo.com/realtime?q=%23{}%23&rd=realtime&tw=realtime&Refer=weibo_realtime&page={}'
     topic_hot_url = 'https://s.weibo.com/hot?q=%23{}%23&xsort=hot&suball=1&tw=hotweibo&Refer=realtime_hot&page={}'
-    comment_base_url = "https://weibo.com/aj/v6/comment/big?ajwvr=6&id={}&page={}&from=singleWeiBo"
+    comment_base_url = "https://weibo.com/aj/v6/comment/big?ajwvr=6&id={}&from=singleWeiBo&page={}"
     search_list = ['北京疫情']
     redis_key = 'topics:start_urls'
 
@@ -34,17 +37,25 @@ class TopicSpider(RedisSpider):
         'REDIS_PARAMS': {
             'db': 1
         },
+
+        # 'ITEM_PIPELINES': {
+        #     'weibospider_phi.pipelines.WeiboTopicPipeline'
+        # }
     }
 
     def parse(self, response):
         '''
         爬取一个话题下的实时消息
         '''
+        print(response.url)
+        if response.url[-6:] == 'page=1':
+            print('This is first page! add other pages into requests queue')
+            for i in range(2,50):
+                next_url = self.topic_realtime_url.format('北京疫情',str(i))
+                yield Request(next_url, callback=self.parse, dont_filter=True)
+        # -----------------
         selector = Selector(response)
         card_node = selector.xpath('//div[@class="card"]')
-        # for i in range(2,50):
-        #     next_url = self.topic_realtime_url.format('北京疫情',str(i))
-        #     yield Request(next_url, callback=self.parse, dont_filter=True)
         for tweet_block in card_node:
             tweet_item = TopicTweetItem()
             tweet_item['user_name'] = tweet_block.xpath('.//div[@class="content"]/div/div[2]/a/@nick-name')[0].extract()
@@ -59,7 +70,7 @@ class TopicSpider(RedisSpider):
                 tweet_item['content'] = ''.join(content_temp_list).replace(' ', '').replace('\n', '')
 
             tweet_item['send_time'] = tweet_block.xpath('//p[@class="from"]/a[1]/text()')[0].extract().replace(' ', '').replace('\n', '')
-            tweet_item['crawl_time'] = time.localtime(time.time())
+            tweet_item['crawl_time'] = time.strftime('%Y.%m.%d %H:%M:%S',time.localtime(time.time()))
             # --------------------------from-------------------------------
             if tweet_block.xpath('.//a[@rel="nofollow"]/text()').extract() != []:
                 tweet_item['send_device'] = tweet_block.xpath('.//a[@rel="nofollow"]/text()')[0].extract()
@@ -68,20 +79,20 @@ class TopicSpider(RedisSpider):
             # -----------------status---------------------
             temp_repost = tweet_block.xpath('.//div[@class="card-act"]/ul/li/a/text()')[1].extract().split(' ')[2]
             if temp_repost == '':
-                tweet_item['repost_count'] = '0'
+                tweet_item['repost_count'] = 0
             else:
-                tweet_item['repost_count'] = temp_repost
+                tweet_item['repost_count'] = int(temp_repost)
 
             temp_comment = tweet_block.xpath('.//div[@class="card-act"]/ul/li/a/text()')[2].extract().split(' ')[1]
             if temp_comment == '':
                 tweet_item['comment_count'] = 0
             else:
-                tweet_item['comment_count'] = temp_comment
+                tweet_item['comment_count'] = int(temp_comment)
             temp_thumbup = tweet_block.xpath('.//div[@class="card-act"]/ul/li/a/em/text()').extract()
             if temp_thumbup == []:
-                tweet_item['thumb_up_count'] = '0'
+                tweet_item['thumb_up_count'] = 0
             else:
-                tweet_item['thumb_up_count'] = temp_thumbup[0]
+                tweet_item['thumb_up_count'] = int(temp_thumbup[0])
             tweet_item['_id'] = tweet_item['url'].split('/')[-1] # tweet_id
             try:
                 tweet_item['user_id'] = tweet_item['url'].split('/')[1]
