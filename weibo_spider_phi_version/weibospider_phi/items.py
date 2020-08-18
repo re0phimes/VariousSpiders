@@ -68,14 +68,16 @@ class TopicTweetItem(scrapy.Item):
     _id = scrapy.Field()
     user_name = scrapy.Field()
     user_id = scrapy.Field()
-    url = scrapy.Field()
+    # topic = scrapy.Field()
     content = scrapy.Field()
+    url = scrapy.Field()
     send_time = scrapy.Field()
+    crawl_time = scrapy.Field()
     send_device = scrapy.Field()
     repost_count = scrapy.Field()
     comment_count = scrapy.Field()
     thumb_up_count = scrapy.Field()
-    crawl_time = scrapy.Field()
+
 
 class TopicCommentItem(scrapy.Item):
     _id = scrapy.Field()

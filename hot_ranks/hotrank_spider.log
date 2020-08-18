@@ -1,7 +1,0 @@
-2020-08-13 18:16:47,389 - C:\Program Files\Python37\lib\site-packages\apscheduler\schedulers\base.py[line:433] - INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
-2020-08-13 18:16:47,390 - C:\Program Files\Python37\lib\site-packages\apscheduler\schedulers\base.py[line:433] - INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
-2020-08-13 18:16:47,390 - C:\Program Files\Python37\lib\site-packages\apscheduler\schedulers\base.py[line:433] - INFO: Adding job tentatively -- it will be properly scheduled when the scheduler starts
-2020-08-13 18:16:47,392 - C:\Program Files\Python37\lib\site-packages\apscheduler\schedulers\base.py[line:867] - INFO: Added job "weibo_hot" to job store "default"
-2020-08-13 18:16:47,393 - C:\Program Files\Python37\lib\site-packages\apscheduler\schedulers\base.py[line:867] - INFO: Added job "baidu_hot" to job store "default"
-2020-08-13 18:16:47,393 - C:\Program Files\Python37\lib\site-packages\apscheduler\schedulers\base.py[line:867] - INFO: Added job "zhihu_hot" to job store "default"
-2020-08-13 18:16:47,393 - C:\Program Files\Python37\lib\site-packages\apscheduler\schedulers\base.py[line:159] - INFO: Scheduler started
