@@ -33,7 +33,7 @@ class TopicSpider(RedisSpider):
         self.topic_realtime_url = 'https://s.weibo.com/realtime?q=%23{}%23&rd=realtime&tw=realtime&Refer=weibo_realtime&page={}'
         self.topic_hot_url = 'https://s.weibo.com/hot?q=%23{}%23&xsort=hot&suball=1&tw=hotweibo&Refer=realtime_hot&page={}'
         self.comment_base_url = "https://weibo.com/aj/v6/comment/big?ajwvr=6&id={}&from=singleWeiBo&page={}"
-        self.search_list = ['疫情','北京疫情防控工作发布会']
+        self.search_list = ['北京疫情','美国干净网络计划']
         self.url_list = []
 
 
@@ -66,11 +66,6 @@ class TopicSpider(RedisSpider):
 #         # }
 #     }
 
-
-
-
-
-
     def parse(self, response):
         '''
         爬取一个话题下的实时消息
@@ -79,8 +74,13 @@ class TopicSpider(RedisSpider):
         print(response.url)
         if response.url[-6:] == 'page=1':
             print('This is first page! add other pages into requests queue')
-            for i in range(2,5):
-                next_url = self.topic_realtime_url.format('北京疫情',str(i))
+            # 2-10页不进行过滤
+            for i in range(2,11):
+                next_url = self.topic_realtime_url.format(topic,str(i))
+                yield Request(next_url, callback=self.parse,meta={'topic':topic},dont_filter=True)
+            # 11-50页要进入dupefilter
+            for i in range(11,51):
+                next_url = self.topic_realtime_url.format(topic,str(i))
                 yield Request(next_url, callback=self.parse,meta={'topic':topic})
         # -----------------
         selector = Selector(response)
