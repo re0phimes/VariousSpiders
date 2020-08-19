@@ -12,7 +12,7 @@ from weibo_topic.utils import time_fix, time_fix_comments
 
 logger = logging.getLogger("TopicTweetSpider")
 
-spider_topics = ['北京疫情','美国干净网络计划']
+spider_topics = ['北京疫情','美国干净网络计划','疫情']
 
 # redis传输url
 # lpush topics:start_urls 'https://s.weibo.com/realtime?q=%23北京疫情%23&rd=realtime&tw=realtime&Refer=weibo_realtime&page=1'
@@ -33,7 +33,7 @@ class TopicSpider(RedisSpider):
         self.topic_realtime_url = 'https://s.weibo.com/realtime?q=%23{}%23&rd=realtime&tw=realtime&Refer=weibo_realtime&page={}'
         self.topic_hot_url = 'https://s.weibo.com/hot?q=%23{}%23&xsort=hot&suball=1&tw=hotweibo&Refer=realtime_hot&page={}'
         self.comment_base_url = "https://weibo.com/aj/v6/comment/big?ajwvr=6&id={}&from=singleWeiBo&page={}"
-        self.search_list = ['疫情','北京疫情','美国净网行动']
+        self.search_list = ['疫情','北京疫情防控工作发布会']
         self.url_list = []
 
 
@@ -44,11 +44,11 @@ class TopicSpider(RedisSpider):
             # 实时链接
             realtime_url = self.topic_realtime_url.format(topic, 1)
             self.url_list.append(realtime_url)
-            yield Request(realtime_url, callback=self.parse, meta={'topic': topic})
+            yield Request(realtime_url, callback=self.parse, meta={'topic': topic}, dont_filter=True)
             # 热门链接
             hot_url = self.topic_hot_url.format(topic,1)
             self.url_list.append(hot_url)
-            yield Request(hot_url, callback=self.parse, meta={'topic': topic})
+            yield Request(hot_url, callback=self.parse, meta={'topic': topic}, dont_filter=True)
 
 
 # use custom_settings
@@ -79,7 +79,7 @@ class TopicSpider(RedisSpider):
         print(response.url)
         if response.url[-6:] == 'page=1':
             print('This is first page! add other pages into requests queue')
-            for i in range(2,50):
+            for i in range(2,5):
                 next_url = self.topic_realtime_url.format('北京疫情',str(i))
                 yield Request(next_url, callback=self.parse,meta={'topic':topic})
         # -----------------
@@ -143,16 +143,16 @@ class TopicSpider(RedisSpider):
         '''
         # 先判断评论多少，多的话需要翻几页
         # print(response.url)
-        if re.findall('&page=1&', response.url):
+        if response.url[-6:] == 'page=1':
             comm_count = json.loads(response.body)['data']['count']
             if int(comm_count) > 15:
                 page_num = int(int(comm_count)/20)
                 # print(page_num)
                 for i in range(2,page_num+1):
                     print(type(i),i)
-                    next_page_num = '&page={}&'.format(str(i))
-                    next_url = response.url.replace('&page=1&', next_page_num)
-                    print(next_url)
+                    next_page_num = '&page={}'.format(str(i))
+                    next_url = response.url.replace('&page=1', next_page_num)
+                    print('current downloading URL is: ' + next_url)
                     yield Request(next_url, callback=self.parse_comments, meta={'tweet_id': response.meta['tweet_id']})
         # 开始实际爬取评论信息
         comm_html = json.loads(response.body)['data']['html']
@@ -190,10 +190,12 @@ class TopicSpider(RedisSpider):
             ### 这里要注意逻辑处理，不要重复爬取
             more_comments_url_list = []
             if user_info_node.xpath('.//div[@class="list_li_v2"]/text()'):
-
-                more_comments_url = 'https://weibo.com/aj/v6/comment/big?ajwvr=6' + \
-                                    user_info_node.xpath('.//div[@class="list_li_v2"]//a[@action-data]/@action-data')[0] + \
-                                    '&page=1&'
+                temp_comment_url = user_info_node.xpath('.//div[@class="list_li_v2"]//a[@action-data]/@action-data')[0]
+                url_params = temp_comment_url.split('&')
+                more_comments_url = 'https://weibo.com/aj/v6/comment/big?ajwvr=6&{}&{}&{}&{}'.format(url_params[0],url_params[2],url_params[3],'page=1')
+                # more_comments_url = 'https://weibo.com/aj/v6/comment/big?ajwvr=6' + \
+                #                     user_info_node.xpath('.//div[@class="list_li_v2"]//a[@action-data]/@action-data')[0] + \
+                #                     '&page=1'
                 more_comments_url_list.append(more_comments_url)
             if len(more_comments_url_list) > 0:
                 yield Request(more_comments_url_list[0], callback=self.parse_comments, meta={'origin_comment': comment_item['_id'],'tweet_id':comment_item['tweet_id']})

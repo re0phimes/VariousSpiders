@@ -38,16 +38,16 @@ RETRY_TIMES = 20
 SCHEDULER = "scrapy_redis.scheduler.Scheduler"
 
 # Dupefilter
-DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+# DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+DUPEFILTER_CLASS = "weibo_topic.dupefilters.WeiboTopicDupeFilter"
+
 
 # redis config
 REDIS_HOST = '159.226.192.228'
 REDIS_PORT = 6789
-# REDIS_DB = 1
+REDIS_DB = 1
 # REDIS_PASSWORD = '123456'
 
-# Redis URL
-REDIS_URL = 'redis://{}:{}'.format(REDIS_HOST, REDIS_PORT)
 
 # Number of Hash Functions to use, defaults to 6
 # BLOOMFILTER_HASH_NUMBER = 6
