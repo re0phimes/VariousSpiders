@@ -42,7 +42,7 @@ DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 # DUPEFILTER_CLASS = "weibo_topic.dupefilters.WeiboTopicDupeFilter"
 
 # redis config
-REDIS_HOST = '127.0.0.1'
+REDIS_HOST = '180.76.153.244'
 REDIS_PORT = 6379
 # REDIS_DB = 1
 # REDIS_PASSWORD = 123456
@@ -104,7 +104,7 @@ DEFAULT_REQUEST_HEADERS = {
 
 
 # mongo config
-MONGO_HOST = '127.0.0.1'
+MONGO_HOST = '180.76.153.244'
 MONGO_PORT = 27000
 MONGO_URL = 'mongodb://{}:{}'.format(MONGO_HOST,MONGO_PORT)
 
