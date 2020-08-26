@@ -8,18 +8,18 @@
 # from itemadapter import ItemAdapter
 import pymongo
 from pymongo.errors import DuplicateKeyError
-from weibo_topic.settings import MONGO_HOST, MONGO_PORT
+from weibo_topic.settings import MONGO_HOST, MONGO_PORT, MONGO_USERNAME,MONGO_PASSWORD
 from weibo_topic.items import *
-
 
 class WeibospiderPhiPipeline:
     def __init__(self):
-        self.client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        db = self.client['weibo']
-        self.Users = db["Users"]
-        self.Tweets = db["Tweets"]
-        self.Comments = db["Comments"]
-        self.Relationships = db["Relationships"]
+        self.client = pymongo.MongoClient('mongodb://{}:{}'.format(MONGO_HOST, MONGO_PORT))
+        self.client.admin.authenticate(MONGO_USERNAME, MONGO_PASSWORD) # very important
+        # db = self.client['weibo']
+        # self.Users = db["Users"]
+        # self.Tweets = db["Tweets"]
+        # self.Comments = db["Comments"]
+        # self.Relationships = db["Relationships"]
         # self.TopicTweets = db['TopicTweets']
         # self.TopicComments = db['TopicComments']
 
@@ -36,6 +36,8 @@ class WeibospiderPhiPipeline:
                     comment_col.insert_one(dict(item))
             except DuplicateKeyError:
                 pass
+        else:
+            print("error")
         return item
 
     # @staticmethod
