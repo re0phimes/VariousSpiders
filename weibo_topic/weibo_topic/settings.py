@@ -42,12 +42,8 @@ DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 # DUPEFILTER_CLASS = "weibo_topic.dupefilters.WeiboTopicDupeFilter"
 
 # redis config
-REDIS_HOST = '180.76.153.244'
+REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6789
-REDIS_DB = 1
-REDIS_PARAMS = {
-            'password': 'arknights',
-        }
 
 
 # Redis URL

@@ -55,15 +55,3 @@ class WeibospiderPhiPipeline:
         except DuplicateKeyError:
             pass
 
-# class WeiboTopicPipline:
-#     def __init__(self):
-#         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-#         self.db = client['weibo_topics']
-#         self.tweet_col = self.db['Pandemic_Tweet']
-#         self.comment_col = ['Pandemic_Comment']
-#
-#     def process_item(self, item, spdier):
-#         if isinstance(item, TopicTweetItem):
-#             self.tweet_col.insert(dict(item))
-#         if isinstance(item, TopicCommentItem):
-#             self.comment_col.insert(dict(item))

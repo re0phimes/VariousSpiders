@@ -98,9 +98,9 @@ DEFAULT_REQUEST_HEADERS = {
 
 
 # mongo config
-MONGO_HOST = '159.226.192.228'
-MONGO_PORT = 27000
-MONGO_URL = 'mongodb://{}:{}'.format(MONGO_HOST,MONGO_PORT)
+MONGO_HOST = '159.226.192.228' # your mongo host ip address
+MONGO_PORT = 27000 # your port
+# MONGO_URL = 'mongodb://{}:{}'.format(MONGO_HOST,MONGO_PORT)
 
 
 # LOG_FILE  = "spider_logs.log"
