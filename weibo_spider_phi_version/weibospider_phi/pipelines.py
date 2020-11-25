@@ -8,14 +8,15 @@
 # from itemadapter import ItemAdapter
 import pymongo
 from pymongo.errors import DuplicateKeyError
-from weibospider_phi.settings import MONGO_HOST, MONGO_PORT
+from weibospider_phi.settings import *
 from weibospider_phi.items import *
 from weibospider_phi.spiders.topic_spider import spider_topics
 
 
 class WeibospiderPhiPipeline:
     def __init__(self):
-        self.client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+        self.client = pymongo.MongoClient(SERVER_MONGO_HOST, SERVER_MONGO_PORT)
+        self.client.admin.authenticate('beihai','yaoduoxiang')
         db = self.client['weibo']
         self.Users = db["Users"]
         self.Tweets = db["Tweets"]

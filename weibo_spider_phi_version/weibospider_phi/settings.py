@@ -41,7 +41,7 @@ SCHEDULER = "scrapy_redis.scheduler.Scheduler"
 DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 
 # redis config
-REDIS_HOST = '159.226.192.228'
+REDIS_HOST = '131.3.50.189'
 REDIS_PORT = 6789
 # REDIS_DB = 1
 # REDIS_PASSWORD = '123456'
@@ -101,7 +101,8 @@ DEFAULT_REQUEST_HEADERS = {
 MONGO_HOST = '159.226.192.228'
 MONGO_PORT = 27000
 MONGO_URL = 'mongodb://{}:{}'.format(MONGO_HOST,MONGO_PORT)
-
+SERVER_MONGO_HOST = '131.3.50.189'
+SERVER_MONGO_PORT = 27890
 
 # LOG_FILE  = "spider_logs.log"
 # LOG_LEVEL = "ERROR"
