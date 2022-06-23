@@ -1,0 +1,23 @@
+version: "3.8"
+services:
+  hotrank_spider:
+    build: .
+    image: top_spiders:latest
+    # 当使使用network_mode加入系统bridge网络吼，则不需要单独设置networks主参数
+    network_mode: "bridge"
+    # volumes:
+    #   # - .:/code
+    #   - hotrank_spider:/code
+    #   - "/etc/localtime:/etc/localtime"
+     #  - "/etc/timezone:/etc/timezone"
+    container_name: "top_spider"
+
+
+# volumes:
+#   # 数据卷名称会获取container_name然后加上下面的名称。
+#   hotrank_spider:
+#     name: hotrank_spider_data
+
+# networks:
+#   spider_network:
+#     external: True

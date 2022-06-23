@@ -1,0 +1,54 @@
+server_name = 'cnic_docker_server'
+
+[cnic_server]
+ip = '159.226.251.226'
+[cnic_server.dbs.mysql]
+port = '3000'
+db = 'hotrank'
+usr = 'root'
+pwd = 'pwdforcnic'
+[cnic_server.dbs.mongo]
+port = 6789
+usr = 'beihai'
+pwd = 'yaoduoxiang'
+
+[other_server]
+ip = '117.50.176.228'
+[other_server.dbs.mysql]
+port = '3000'
+db = 'hotrank'
+usr = 'root'
+pwd = 'pwdforcnic'
+[other_server.dbs.mongo]
+port = 6789
+usr = 'beihai'
+pwd = 'yaoduoxiang'
+
+[local]
+ip = '127.0.0.1'
+[local.dbs.mysql]
+port = 3000
+db = 'hotrank'
+usr = 'root'
+pwd = 'pwdforcnic'
+[local.dbs.mongo]
+port = 27890
+usr = 'beihai'
+pwd = 'yaoduoxiang'
+
+[cnic_docker_server]
+ip = '192.168.33.52'
+[cnic_docker_server.dbs.mysql]
+port = 3000
+db = 'hotrank'
+usr = 'root'
+pwd = 'pwdforcnic'
+[cnic_docker_server.dbs.mongo]
+port = 27890
+usr = 'beihai'
+pwd = 'yaoduoxiang'
+
+[db_info]
+[db_info.mongo]
+db_name = 'tops_daily'
+db_name2 = 'tops_keywords'
